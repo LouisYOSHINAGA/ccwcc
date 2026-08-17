@@ -1,6 +1,6 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>墨流し — Suminagashi</title>
+<title>枯山水 — Karesansui</title>
 <style>
   :root {
     color-scheme: dark;
@@ -32,7 +32,6 @@
     letter-spacing: 0.14em;
     line-height: 1.9;
     pointer-events: none;
-    transition: opacity 1.2s ease 3s;
     text-transform: uppercase;
   }
   body:not(:hover) #hud { opacity: 0.25; }
@@ -42,8 +41,8 @@
 
 <main id="stage"></main>
 <div id="hud">
-  <div>墨流し &nbsp; suminagashi</div>
-  <div>click / space — new sheet &nbsp;·&nbsp; r — pour again &nbsp;·&nbsp; s — save</div>
+  <div>枯山水 &nbsp; karesansui</div>
+  <div>click / space — new garden &nbsp;·&nbsp; r — rake again &nbsp;·&nbsp; s — save</div>
   <div>seed <b id="seed">—</b> &nbsp;·&nbsp; <a href="../../index.html">index</a></div>
 </div>
 
@@ -51,6 +50,7 @@
 <script src="../../common/rng.js"></script>
 <script src="../../common/paper.js"></script>
 <script src="../../common/sheet.js"></script>
+<script src="../../common/contours.js"></script>
 <script src="palettes.js"></script>
-<script src="marbling.js"></script>
+<script src="garden.js"></script>
 <script src="sketch.js"></script>

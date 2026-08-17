@@ -22,27 +22,8 @@
 /* the sheet                                                                   */
 /* -------------------------------------------------------------------------- */
 
-const SHEET = { w: 1240, h: 1600 };
-const MARGIN = { left: 96, right: 96, top: 96, bottom: 196 };
-
-/**
- * The marbled area is not always the whole sheet. Traditional formats give the
- * series its variety — and, more to the point, they give it 余白: paper that is
- * deliberately left alone. A full-bleed sheet every time is only maximalism.
- * The caption sits at a fixed height regardless, so the works hang together.
- */
-const FORMATS = [
-  // the whole sheet, edge to edge
-  { id: 'zenshi', ja: '全紙', roman: 'ZENSHI', x: 96, y: 96, w: 1048, h: 1308, weight: 5 },
-  // a square poem card, held high on the page
-  { id: 'shikishi', ja: '色紙', roman: 'SHIKISHI', x: 96, y: 96, w: 1048, h: 1048, weight: 3 },
-  // a narrow vertical strip, as a poem is written on
-  { id: 'tanzaku', ja: '短冊', roman: 'TANZAKU', x: 396, y: 118, w: 448, h: 1230, weight: 2 },
-  // a wide band, floated a little above centre
-  { id: 'yokomono', ja: '横物', roman: 'YOKOMONO', x: 96, y: 386, w: 1048, h: 646, weight: 2 },
-];
-
-const CAPTION = { title: SHEET.h - 134, sub: SHEET.h - 100, seal: SHEET.h - 124 };
+const SHEET = Sheet.SIZE;
+const MARGIN = Sheet.MARGIN;
 
 const TITLES = {
   stone: [['静水', 'SEISUI'], ['泉', 'IZUMI'], ['淵', 'FUCHI'], ['月映', 'TSUKIBAE'], ['石', 'ISHI']],
@@ -50,9 +31,6 @@ const TITLES = {
   rain: [['雨脚', 'AMAASHI'], ['群島', 'GUNTŌ'], ['星屑', 'HOSHIKUZU'], ['苔庭', 'KOKENIWA']],
   twin: [['双', 'SŌ'], ['逢瀬', 'ŌSE'], ['二石', 'NISEKI'], ['響', 'HIBIKI']],
 };
-
-const SERIF =
-  "'Hiragino Mincho ProN', 'Yu Mincho', 'IPAPMincho', 'IPAMincho', Georgia, 'Times New Roman', serif";
 
 /* -------------------------------------------------------------------------- */
 /* state                                                                       */
@@ -342,68 +320,6 @@ function buildScore(rng, pal, plate) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* the seal (落款)                                                             */
-/* -------------------------------------------------------------------------- */
-
-/**
- * A carved stone seal, red ground with the strokes cut away. The "characters"
- * are made of the vertical spines and horizontal bars that seal script is
- * built from — abstract, but the right shape at this size.
- */
-function makeSeal(size, rng, vermilion) {
-  const g = createGraphics(size, size);
-  g.pixelDensity(2);
-  g.clear();
-  g.noStroke();
-  g.fill(vermilion);
-  g.rect(0, 0, size, size, size * 0.04);
-
-  // The stone is old: chip the edges and pit the face.
-  g.erase();
-  for (let i = 0; i < 90; i++) {
-    const edge = rng.int(0, 3);
-    const t = rng.float(size);
-    const d = rng.float(0.5, size * 0.07);
-    const x = edge === 0 ? t : edge === 1 ? size - d : t;
-    const y = edge === 0 ? d : edge === 1 ? t : edge === 2 ? size - d : t;
-    g.circle(edge === 3 ? d : x, y, rng.float(1, size * 0.11));
-  }
-  for (let i = 0; i < 260; i++) {
-    g.circle(rng.float(size), rng.float(size), rng.float(0.4, 2.0));
-  }
-  g.noErase();
-
-  // Cut the glyph.
-  const m = size * 0.13;
-  const inner = size - m * 2;
-  g.erase();
-  g.noFill();
-  g.stroke(255);
-  g.strokeWeight(size * 0.045);
-  g.rect(m, m, inner, inner);
-
-  const cols = rng.int(1, 2);
-  const cw = inner / cols;
-  for (let c = 0; c < cols; c++) {
-    const x0 = m + cw * c + cw * 0.22;
-    const x1 = m + cw * (c + 1) - cw * 0.22;
-    const spine = (x0 + x1) / 2 + rng.float(-cw * 0.06, cw * 0.06);
-    g.strokeWeight(size * rng.float(0.035, 0.055));
-    g.line(spine, m + inner * 0.14, spine, m + inner * 0.86);
-    const bars = rng.int(2, 4);
-    for (let b = 0; b < bars; b++) {
-      const y = m + inner * (0.2 + (0.6 * b) / Math.max(1, bars - 1)) + rng.float(-3, 3);
-      g.line(x0, y, x1, y);
-    }
-    if (rng.bool(0.5)) {
-      g.line(x0, m + inner * 0.86, x1, m + inner * 0.86);
-    }
-  }
-  g.noErase();
-  return g;
-}
-
-/* -------------------------------------------------------------------------- */
 /* generation                                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -412,7 +328,7 @@ function generate(seed) {
   noiseSeed(hashString(String(seed)));
 
   const pal = rng.pick(PALETTES);
-  const plate = rng.weighted(FORMATS.map((f) => [f, f.weight]));
+  const plate = Sheet.pickFormat(rng);
   const score = buildScore(rng, pal, plate);
 
   const marbling = new Marbling({
@@ -448,7 +364,7 @@ function generate(seed) {
       rng: new Rng(seed + ':film'),
       strength: pal.dark ? 22 : 30,
     }),
-    seal: makeSeal(58, new Rng(seed + ':seal'), pal.dark ? '#C4443F' : '#B0272E'),
+    seal: Sheet.makeSeal(window, 58, new Rng(seed + ':seal'), pal.dark ? '#C4443F' : '#B0272E'),
     cursor: 0,
   };
 
@@ -508,62 +424,24 @@ function drawInk() {
   }
 }
 
-function trackedWidth(g, str, tracking) {
-  let w = 0;
-  for (const ch of str) w += g.textWidth(ch) + tracking;
-  return w - tracking;
-}
-
-function trackedText(g, str, x, y, tracking) {
-  let cx = x;
-  for (const ch of str) {
-    g.text(ch, cx, y);
-    cx += g.textWidth(ch) + tracking;
-  }
-}
-
 function drawCaption(g) {
   const pal = piece.pal;
-  const ink = pal.dark ? mixHex(pal.paper, '#ffffff', 0.82) : pal.inks[0];
-  const faint = pal.dark ? mixHex(pal.paper, '#ffffff', 0.5) : mixHex(pal.inks[0], pal.paper, 0.5);
-  g.push();
-  g.noStroke();
-  g.textAlign(LEFT, BASELINE);
-  g.textFont(SERIF);
-
-  g.fill(ink);
-  g.textSize(30);
-  trackedText(g, piece.score.titleJa, MARGIN.left, CAPTION.title, 6);
-
-  g.fill(faint);
-  g.textSize(11.5);
-  const line = [
-    piece.score.titleRoman,
-    '墨流し SUMINAGASHI',
-    `${piece.plate.ja} ${piece.plate.roman}`,
-    `${piece.pal.name} ${piece.pal.roman}`,
-    `${piece.score.drops} DROPS`,
-    piece.seed.toUpperCase(),
-  ].join('   ·   ');
-  trackedText(g, line, MARGIN.left, CAPTION.sub, 1.4);
-
-  // The seal sits at the right, squared to the sheet edge, turned a little.
-  const s = piece.seal.width;
-  g.push();
-  g.translate(SHEET.w - MARGIN.right - s / 2, CAPTION.seal);
-  g.rotate(-0.022);
-  g.imageMode(CENTER);
-  g.image(piece.seal, 0, 0);
-  g.pop();
-  g.pop();
+  Sheet.drawCaption(window, g, {
+    titleJa: piece.score.titleJa,
+    fields: [
+      piece.score.titleRoman,
+      '墨流し SUMINAGASHI',
+      `${piece.plate.ja} ${piece.plate.roman}`,
+      `${pal.name} ${pal.roman}`,
+      `${piece.score.drops} DROPS`,
+      piece.seed.toUpperCase(),
+    ],
+    ink: pal.dark ? mixHex(pal.paper, '#ffffff', 0.82) : pal.inks[0],
+    faint: pal.dark ? mixHex(pal.paper, '#ffffff', 0.5) : mixHex(pal.inks[0], pal.paper, 0.5),
+    seal: piece.seal,
+  });
 }
 
-/**
- * @param {boolean} quick While the sheet is still being poured, skip the
- *   finishing passes — the blur halo in particular costs more than everything
- *   else combined, and none of it is legible at the speed the rings are
- *   moving. The full composite runs once the last operation lands.
- */
 function rebuildSheet(quick) {
   drawInk();
   const plate = piece.plate;
@@ -599,12 +477,7 @@ function rebuildSheet(quick) {
   ctx.restore();
 
   // The impression a plate leaves in the sheet.
-  sheetLayer.push();
-  sheetLayer.noFill();
-  sheetLayer.stroke(piece.pal.dark ? 255 : 0, piece.pal.dark ? 26 : 24);
-  sheetLayer.strokeWeight(1);
-  sheetLayer.rect(plate.x - 0.5, plate.y - 0.5, plate.w + 1, plate.h + 1);
-  sheetLayer.pop();
+  Sheet.plateMark(sheetLayer, plate, piece.pal.dark);
 
   drawCaption(sheetLayer);
   Paper.vignette(sheetLayer, {
@@ -634,7 +507,7 @@ function setup() {
     strength: 22,
   });
 
-  fitToWindow();
+  Sheet.fitToWindow(window);
   generate(seed);
   if (still) {
     advance(0);
@@ -658,21 +531,8 @@ function draw() {
   pop();
 }
 
-function fitToWindow() {
-  const pad = 28;
-  const scale = Math.min(
-    (windowWidth - pad * 2) / SHEET.w,
-    (windowHeight - pad * 2) / SHEET.h
-  );
-  const el = document.querySelector('#stage canvas');
-  if (el) {
-    el.style.width = `${Math.round(SHEET.w * scale)}px`;
-    el.style.height = `${Math.round(SHEET.h * scale)}px`;
-  }
-}
-
 function windowResized() {
-  fitToWindow();
+  Sheet.fitToWindow(window);
 }
 
 function updateHud() {
