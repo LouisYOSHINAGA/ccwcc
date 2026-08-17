@@ -117,6 +117,50 @@
   }
 
   /**
+   * Uneven film density, meant to be composited with MULTIPLY.
+   *
+   * A pigment film is never laid down evenly: it pools where the paper is
+   * slack and thins where it was pulled taut, and the sheet takes it up
+   * unevenly on top of that. Without this the ink reads as vector fill —
+   * flat colour with hard edges and no substance behind it.
+   *
+   * @returns {p5.Graphics}
+   */
+  function makeFilm(p, w, h, opts) {
+    const rng = opts.rng;
+    const strength = opts.strength ?? 26;
+    const sc = 5;
+    const mw = Math.ceil(w / sc);
+    const mh = Math.ceil(h / sc);
+    const m = p.createGraphics(mw, mh);
+    m.pixelDensity(1);
+    m.loadPixels();
+    const o1 = rng.float(1000);
+    const o2 = rng.float(1000);
+    for (let y = 0; y < mh; y++) {
+      for (let x = 0; x < mw; x++) {
+        // one slow octave for pooling, one quick one for the tooth of the sheet
+        const n =
+          p.noise(x * 0.016 + o1, y * 0.016 + o1) * 0.65 +
+          p.noise(x * 0.09 + o2, y * 0.09 + o2) * 0.35;
+        const v = 255 - Math.max(0, n - 0.42) * strength * 3;
+        const i = (y * mw + x) * 4;
+        m.pixels[i] = v;
+        m.pixels[i + 1] = v * 0.995;
+        m.pixels[i + 2] = v * 0.985;
+        m.pixels[i + 3] = 255;
+      }
+    }
+    m.updatePixels();
+
+    const g = p.createGraphics(w, h);
+    g.pixelDensity(1);
+    g.image(m, 0, 0, w, h);
+    m.remove();
+    return g;
+  }
+
+  /**
    * Per-pixel tooth, meant to be composited with OVERLAY so that mid-grey is
    * a no-op and only the deviation shows.
    * @returns {p5.Graphics}
@@ -162,5 +206,5 @@
     ctx.restore();
   }
 
-  global.Paper = { makePaper, makeGrain, vignette, hexToRgb };
+  global.Paper = { makePaper, makeFilm, makeGrain, vignette, hexToRgb };
 })(window);

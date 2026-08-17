@@ -46,6 +46,11 @@ wanders between touches, the rhythm of ink against clear, and how the sheet is
 combed afterwards. Drop radii are solved for coverage rather than guessed, so a
 sheet never ends in a hard accidental edge halfway down the page.
 
+The marbled area is not always the whole sheet. Four traditional formats —
+全紙, 色紙, 短冊, 横物 — decide how much paper is deliberately left alone, and
+the caption sits at a fixed height regardless so the works hang together as a
+series.
+
 | | |
 |---|---|
 | click / space | a new sheet |

@@ -94,7 +94,6 @@
         pts[i * 2 + 1] = cy + Math.sin(a) * rad;
       }
       this.rings.push(new Ring(pts, style));
-      this.refine();
       return this;
     }
 
@@ -143,7 +142,6 @@
           p[i + 1] += uy * s;
         }
       }
-      this.refine();
       return this;
     }
 
@@ -167,7 +165,6 @@
           p[i + 1] = cy + dx * s + dy * c;
         }
       }
-      this.refine();
       return this;
     }
 
@@ -197,6 +194,9 @@
     /**
      * Rings stretch as they are pushed outward, so edges are split to keep
      * curves smooth; rings that have left the plate entirely are retired.
+     * The caller decides when to run this — it walks every point in the
+     * scene, so doing it after every one of a comb's sub-steps costs far more
+     * than it buys.
      * Past the point budget the target edge length is relaxed instead of
      * refusing to subdivide, so shapes stay closed rather than going faceted
      * in one place and smooth in another.

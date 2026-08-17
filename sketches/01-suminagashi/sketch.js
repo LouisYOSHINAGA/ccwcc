@@ -24,12 +24,25 @@
 
 const SHEET = { w: 1240, h: 1600 };
 const MARGIN = { left: 96, right: 96, top: 96, bottom: 196 };
-const PLATE = {
-  x: MARGIN.left,
-  y: MARGIN.top,
-  w: SHEET.w - MARGIN.left - MARGIN.right,
-  h: SHEET.h - MARGIN.top - MARGIN.bottom,
-};
+
+/**
+ * The marbled area is not always the whole sheet. Traditional formats give the
+ * series its variety — and, more to the point, they give it 余白: paper that is
+ * deliberately left alone. A full-bleed sheet every time is only maximalism.
+ * The caption sits at a fixed height regardless, so the works hang together.
+ */
+const FORMATS = [
+  // the whole sheet, edge to edge
+  { id: 'zenshi', ja: '全紙', roman: 'ZENSHI', x: 96, y: 96, w: 1048, h: 1308, weight: 5 },
+  // a square poem card, held high on the page
+  { id: 'shikishi', ja: '色紙', roman: 'SHIKISHI', x: 96, y: 96, w: 1048, h: 1048, weight: 3 },
+  // a narrow vertical strip, as a poem is written on
+  { id: 'tanzaku', ja: '短冊', roman: 'TANZAKU', x: 396, y: 118, w: 448, h: 1230, weight: 2 },
+  // a wide band, floated a little above centre
+  { id: 'yokomono', ja: '横物', roman: 'YOKOMONO', x: 96, y: 386, w: 1048, h: 646, weight: 2 },
+];
+
+const CAPTION = { title: SHEET.h - 134, sub: SHEET.h - 100, seal: SHEET.h - 124 };
 
 const TITLES = {
   stone: [['静水', 'SEISUI'], ['泉', 'IZUMI'], ['淵', 'FUCHI'], ['月映', 'TSUKIBAE'], ['石', 'ISHI']],
@@ -137,8 +150,8 @@ function makeBrush(pal, rng) {
  * `reach` is how far past that corner to go: 1 is exactly the corner, more for
  * clusters that sit off-centre or are split between several pools.
  */
-function coverageRadius(count, reach) {
-  const halfDiagonal = Math.hypot(PLATE.w, PLATE.h) / 2;
+function coverageRadius(plate, count, reach) {
+  const halfDiagonal = Math.hypot(plate.w, plate.h) / 2;
   // E[f^2] over the per-drop size jitter below, so the estimate stays honest
   const jitter = 1.09;
   return (halfDiagonal * reach) / Math.sqrt(count * jitter);
@@ -182,7 +195,14 @@ function pour(ops, rng, brush, o) {
   }
 }
 
-/** A comb pull, split into steps so it can be watched being drawn. */
+/**
+ * A comb pull, split into steps so it can be watched being drawn.
+ *
+ * Splitting is exact for a straight pull — the displacement is parallel to the
+ * line, so a point's distance from it never changes and the steps simply add.
+ * With a wavy line it is not quite exact, and the small difference reads as
+ * the drag of a real comb rather than a single instantaneous shear.
+ */
 function combOps(ops, rng, o) {
   const steps = o.steps ?? 18;
   for (let i = 0; i < steps; i++) {
@@ -195,13 +215,16 @@ function combOps(ops, rng, o) {
       wave: o.wave ?? 0,
       period: o.period ?? 1,
       phase: o.phase ?? 0,
+      // Resampling walks every point in the scene, so it is not worth doing
+      // between every sub-step — only often enough to keep curves smooth.
+      refine: i % 5 === 4 || i === steps - 1,
     });
   }
 }
 
-function buildScore(rng, pal) {
-  const W = PLATE.w;
-  const H = PLATE.h;
+function buildScore(rng, pal, plate) {
+  const W = plate.w;
+  const H = plate.h;
   const short = Math.min(W, H);
   const layout = rng.weighted([['stone', 5], ['tide', 3], ['rain', 3], ['twin', 2]]);
   const brush = makeBrush(pal, rng);
@@ -214,7 +237,7 @@ function buildScore(rng, pal) {
       x: W * rng.float(0.42, 0.58),
       y: H * rng.float(0.40, 0.56),
       count,
-      radius: coverageRadius(count, rng.float(1.25, 1.5)),
+      radius: coverageRadius(plate, count, rng.float(1.25, 1.5)),
       drift: short * rng.float(0.006, 0.017),
       tStart: 0,
     });
@@ -227,7 +250,7 @@ function buildScore(rng, pal) {
       x: W * 0.5 - (Math.cos(a) * span) / 2,
       y: H * 0.5 - (Math.sin(a) * span) / 2,
       count,
-      radius: coverageRadius(count, rng.float(1.3, 1.55)),
+      radius: coverageRadius(plate, count, rng.float(1.3, 1.55)),
       drift: short * 0.008,
       driftX: (Math.cos(a) * span) / count,
       driftY: (Math.sin(a) * span) / count,
@@ -238,7 +261,7 @@ function buildScore(rng, pal) {
     const pools = rng.int(3, 6);
     const each = rng.int(38, 62);
     // Split between pools, so each has to reach correspondingly further.
-    const radius = coverageRadius(each * pools, rng.float(1.5, 1.8));
+    const radius = coverageRadius(plate, each * pools, rng.float(1.5, 1.8));
     for (let i = 0; i < pools; i++) {
       pour(ops, rng, brush, {
         x: W * rng.float(0.2, 0.8),
@@ -254,7 +277,7 @@ function buildScore(rng, pal) {
     // Two pools of unequal weight, close enough to crowd each other.
     const big = rng.int(110, 150);
     const small = rng.int(50, 85);
-    const radius = coverageRadius(big + small, rng.float(1.4, 1.65));
+    const radius = coverageRadius(plate, big + small, rng.float(1.4, 1.65));
     const gap = short * rng.float(0.22, 0.36);
     const a = rng.float(Math.PI * 2);
     const cx = W * rng.float(0.44, 0.56);
@@ -389,18 +412,22 @@ function generate(seed) {
   noiseSeed(hashString(String(seed)));
 
   const pal = rng.pick(PALETTES);
-  const score = buildScore(rng, pal);
+  const plate = rng.weighted(FORMATS.map((f) => [f, f.weight]));
+  const score = buildScore(rng, pal, plate);
 
   const marbling = new Marbling({
-    width: PLATE.w,
-    height: PLATE.h,
+    width: plate.w,
+    height: plate.h,
     maxSeg: 2.2,
     maxPoints: 190000,
-    margin: Math.max(PLATE.w, PLATE.h) * 0.1,
+    margin: Math.max(plate.w, plate.h) * 0.1,
   });
 
-  if (piece && piece.paper) piece.paper.remove();
-  if (piece && piece.seal) piece.seal.remove();
+  if (piece) {
+    for (const layer of [piece.paper, piece.seal, piece.film]) {
+      if (layer) layer.remove();
+    }
+  }
 
   const paper = Paper.makePaper(window, SHEET.w, SHEET.h, {
     rng: new Rng(seed + ':paper'),
@@ -412,14 +439,22 @@ function generate(seed) {
   piece = {
     seed: String(seed),
     pal,
+    plate,
     rng,
     score,
     marbling,
     paper,
+    film: Paper.makeFilm(window, plate.w, plate.h, {
+      rng: new Rng(seed + ':film'),
+      strength: pal.dark ? 22 : 30,
+    }),
     seal: makeSeal(58, new Rng(seed + ':seal'), pal.dark ? '#C4443F' : '#B0272E'),
     cursor: 0,
   };
 
+  if (inkLayer) inkLayer.remove();
+  inkLayer = createGraphics(plate.w, plate.h);
+  inkLayer.pixelDensity(1);
   inkLayer.clear();
   dirty = true;
   window.__ready = false;
@@ -440,6 +475,7 @@ function advance(budgetMs) {
       case 'stir': marbling.stir(op.x, op.y, op.radius, op.strength); break;
       case 'breathe': marbling.breathe(op.scale, op.amount, op.phase); break;
     }
+    if (op.refine !== false && op.t !== 'breathe') marbling.refine();
     ran++;
     if (budgetMs > 0 && performance.now() - start > budgetMs) break;
   }
@@ -490,8 +526,6 @@ function drawCaption(g) {
   const pal = piece.pal;
   const ink = pal.dark ? mixHex(pal.paper, '#ffffff', 0.82) : pal.inks[0];
   const faint = pal.dark ? mixHex(pal.paper, '#ffffff', 0.5) : mixHex(pal.inks[0], pal.paper, 0.5);
-  const baseY = PLATE.y + PLATE.h;
-
   g.push();
   g.noStroke();
   g.textAlign(LEFT, BASELINE);
@@ -499,23 +533,24 @@ function drawCaption(g) {
 
   g.fill(ink);
   g.textSize(30);
-  trackedText(g, piece.score.titleJa, MARGIN.left, baseY + 66, 6);
+  trackedText(g, piece.score.titleJa, MARGIN.left, CAPTION.title, 6);
 
   g.fill(faint);
   g.textSize(11.5);
   const line = [
     piece.score.titleRoman,
     '墨流し SUMINAGASHI',
+    `${piece.plate.ja} ${piece.plate.roman}`,
     `${piece.pal.name} ${piece.pal.roman}`,
     `${piece.score.drops} DROPS`,
     piece.seed.toUpperCase(),
   ].join('   ·   ');
-  trackedText(g, line, MARGIN.left, baseY + 100, 1.4);
+  trackedText(g, line, MARGIN.left, CAPTION.sub, 1.4);
 
-  // The seal sits at the right, squared to the plate edge, turned a little.
+  // The seal sits at the right, squared to the sheet edge, turned a little.
   const s = piece.seal.width;
   g.push();
-  g.translate(SHEET.w - MARGIN.right - s / 2, baseY + 74);
+  g.translate(SHEET.w - MARGIN.right - s / 2, CAPTION.seal);
   g.rotate(-0.022);
   g.imageMode(CENTER);
   g.image(piece.seal, 0, 0);
@@ -523,8 +558,15 @@ function drawCaption(g) {
   g.pop();
 }
 
-function rebuildSheet() {
+/**
+ * @param {boolean} quick While the sheet is still being poured, skip the
+ *   finishing passes — the blur halo in particular costs more than everything
+ *   else combined, and none of it is legible at the speed the rings are
+ *   moving. The full composite runs once the last operation lands.
+ */
+function rebuildSheet(quick) {
   drawInk();
+  const plate = piece.plate;
 
   sheetLayer.clear();
   sheetLayer.image(piece.paper, 0, 0);
@@ -532,18 +574,28 @@ function rebuildSheet() {
   const ctx = sheetLayer.drawingContext;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(PLATE.x, PLATE.y, PLATE.w, PLATE.h);
+  ctx.rect(plate.x, plate.y, plate.w, plate.h);
   ctx.clip();
 
-  // A soft halo first: ink wicking into damp paper.
-  ctx.filter = 'blur(9px)';
-  sheetLayer.push();
-  sheetLayer.tint(255, 105);
-  sheetLayer.image(inkLayer, PLATE.x, PLATE.y);
-  sheetLayer.pop();
-  ctx.filter = 'none';
+  if (!quick) {
+    // A soft halo first: ink wicking into damp paper.
+    ctx.filter = 'blur(9px)';
+    sheetLayer.push();
+    sheetLayer.tint(255, 105);
+    sheetLayer.image(inkLayer, plate.x, plate.y);
+    sheetLayer.pop();
+    ctx.filter = 'none';
+  }
 
-  sheetLayer.image(inkLayer, PLATE.x, PLATE.y);
+  sheetLayer.image(inkLayer, plate.x, plate.y);
+
+  if (!quick) {
+    // Where the film pooled and where it went thin.
+    sheetLayer.push();
+    sheetLayer.blendMode(MULTIPLY);
+    sheetLayer.image(piece.film, plate.x, plate.y);
+    sheetLayer.pop();
+  }
   ctx.restore();
 
   // The impression a plate leaves in the sheet.
@@ -551,7 +603,7 @@ function rebuildSheet() {
   sheetLayer.noFill();
   sheetLayer.stroke(piece.pal.dark ? 255 : 0, piece.pal.dark ? 26 : 24);
   sheetLayer.strokeWeight(1);
-  sheetLayer.rect(PLATE.x - 0.5, PLATE.y - 0.5, PLATE.w + 1, PLATE.h + 1);
+  sheetLayer.rect(plate.x - 0.5, plate.y - 0.5, plate.w + 1, plate.h + 1);
   sheetLayer.pop();
 
   drawCaption(sheetLayer);
@@ -577,8 +629,6 @@ function setup() {
 
   sheetLayer = createGraphics(SHEET.w, SHEET.h);
   sheetLayer.pixelDensity(1);
-  inkLayer = createGraphics(PLATE.w, PLATE.h);
-  inkLayer.pixelDensity(1);
   grainLayer = Paper.makeGrain(window, SHEET.w, SHEET.h, {
     rng: new Rng('grain'),
     strength: 22,
@@ -593,12 +643,13 @@ function setup() {
 }
 
 function draw() {
-  if (piece.cursor < piece.score.ops.length) advance(13);
-  else window.__ready = true;
-  if (dirty) {
-    rebuildSheet();
+  const pouring = piece.cursor < piece.score.ops.length;
+  if (pouring) advance(18);
+  if (dirty || (!pouring && !window.__ready)) {
+    rebuildSheet(piece.cursor < piece.score.ops.length);
     dirty = false;
   }
+  if (!pouring) window.__ready = true;
   image(sheetLayer, 0, 0);
   push();
   blendMode(OVERLAY);
