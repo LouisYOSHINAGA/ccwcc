@@ -167,35 +167,47 @@
   function placeStones(rng, plate) {
     const short = Math.min(plate.w, plate.h);
     const groups = [];
-    const wanted = rng.weighted([[2, 2], [3, 5], [4, 3], [5, 1]]);
+    const wanted = rng.weighted([[2, 4], [3, 5], [4, 2]]);
     // Odd numbers, and one group that clearly leads. 七五三 — seven, five,
     // three — is the traditional way to divide stones between groups.
-    const sizes = [rng.pick([3, 3, 5]), ...rng.shuffled([1, 2, 3, 1, 2, 3])].slice(0, wanted);
+    const sizes = [rng.pick([3, 3, 5]), ...rng.shuffled([1, 1, 2, 2, 3])].slice(0, wanted);
     const stones = [];
+    const inset = short * 0.15;
 
-    // Group centres: rejection-sampled. Separation is a hard requirement —
-    // stone groups that crowd each other lose their rings to one another —
-    // while staying off dead centre is only a preference, added to the score
-    // rather than folded into the separation test.
-    const inset = short * 0.14;
-    for (let g = 0; g < wanted; g++) {
-      let best = null;
-      let bestScore = -Infinity;
-      let bestGap = 0;
-      for (let attempt = 0; attempt < 120; attempt++) {
-        const x = rng.float(inset, plate.w - inset);
-        const y = rng.float(inset, plate.h - inset);
+    // Composition, not scattering.
+    //
+    // Spreading the groups as far apart as they will go — the obvious thing to
+    // do — lays them out like polka dots, evenly and with nothing left over.
+    // A garden is arranged the other way round: a main group set at a power
+    // point, the rest placed *in relation to it*, and one large stretch of
+    // gravel left with nothing in it at all. So the first group is placed and
+    // the others are hung off it at varied distances and angles, which leaves
+    // the far side of the plate open by construction.
+    const main = {
+      x: plate.w * (rng.bool() ? rng.float(0.20, 0.38) : rng.float(0.62, 0.80)),
+      y: plate.h * (rng.bool() ? rng.float(0.18, 0.36) : rng.float(0.64, 0.82)),
+    };
+    groups.push(main);
+
+    for (let g = 1; g < wanted; g++) {
+      for (let attempt = 0; attempt < 80; attempt++) {
+        const a = rng.float(Math.PI * 2);
+        const dist = short * rng.float(0.30, 0.80);
+        const x = main.x + Math.cos(a) * dist;
+        const y = main.y + Math.sin(a) * dist;
+        if (x < inset || y < inset || x > plate.w - inset || y > plate.h - inset) continue;
         let gap = Infinity;
         for (const c of groups) gap = Math.min(gap, Math.hypot(x - c.x, y - c.y));
-        if (gap === Infinity) gap = short;
-        const score = gap + Math.hypot(x - plate.w / 2, y - plate.h / 2) * 0.18;
-        if (score > bestScore) { bestScore = score; bestGap = gap; best = { x, y }; }
+        if (gap < short * 0.24) continue;
+        groups.push({ x, y });
+        break;
       }
-      if (groups.length && bestGap < short * 0.26) continue;
-      groups.push(best);
+    }
 
+    for (let g = 0; g < groups.length; g++) {
+      const best = groups[g];
       const count = sizes[g];
-      const lead = short * rng.float(0.045, 0.085) * (g === 0 ? 1.25 : 1);
+      const lead = short * rng.float(0.045, 0.085) * (g === 0 ? 1.35 : 0.82);
       const spread = rng.float(Math.PI * 2);
       for (let i = 0; i < count; i++) {
         // attendants get smaller and huddle around the lead stone

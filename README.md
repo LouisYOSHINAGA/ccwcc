@@ -3,8 +3,10 @@
 Generative works in the browser, made with [p5.js](https://p5js.org/).
 
 Every piece is a pure function of a short seed string, so any result can be
-reproduced exactly by asking for it by name — `?seed=kuroshio-71`. Nothing
-touches `Math.random()` once generation begins.
+brought back by asking for it by name — `?seed=kuroshio-71`. Nothing touches
+`Math.random()` once generation begins. (The geometry is exact; a few hundred
+pixels along blurred shadow edges can differ between runs, because the
+browser's canvas blur is not itself bit-deterministic.)
 
 ## Running it
 

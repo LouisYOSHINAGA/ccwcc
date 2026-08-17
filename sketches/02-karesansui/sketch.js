@@ -27,6 +27,9 @@ const TITLES = [
   ['静寂', 'SEIJAKU'], ['七五三', 'SHICHIGOSAN'], ['独坐', 'DOKUZA'], ['残雪', 'ZANSETSU'],
 ];
 
+/** Roughly six seconds at 60fps: long enough to watch, short enough to wait. */
+const REVEAL_FRAMES = 340;
+
 let piece = null;
 let sheetLayer;
 let grainLayer;
@@ -45,7 +48,10 @@ function rgba(hex, a) {
 function mixHex(a, b, t) {
   const A = Paper.hexToRgb(a);
   const B = Paper.hexToRgb(b);
-  const c = A.map((v, i) => Math.round(v + (B[i] - v) * t));
+  // Clamped: an out-of-range or NaN component would stringify to something
+  // like "#NaN2030", which canvas rejects *silently* — leaving whatever
+  // fillStyle happened to be set before, which is a very confusing bug.
+  const c = A.map((v, i) => Math.min(255, Math.max(0, Math.round(v + (B[i] - v) * t))));
   return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 
@@ -125,8 +131,14 @@ function drawMoss(g, stone, pal, rng) {
   }
   // Laid down at low opacity: moss on gravel is a change of tone, not a
   // patch of colour, and at this scale a solid green reads as a spill.
-  ctx.fillStyle = rgba(pal.moss[0], 0.55);
+  // Blurred, because the polygon is scaffolding, not an edge: moss has no
+  // outline, it just stops being moss, and a crisp boundary here turns the
+  // whole patch into a sticker.
+  ctx.save();
+  ctx.filter = `blur(${Math.max(4, R * 0.16)}px)`;
+  ctx.fillStyle = rgba(pal.moss[0], 0.5);
   ctx.fill(polyPath(pts));
+  ctx.restore();
 
   // stipple the boundary outward so it dissolves into the gravel
   g.noStroke();
@@ -189,7 +201,7 @@ function drawStone(g, stone, pal, rng) {
   ctx.restore();
 
   // the bevel: one facet per edge of the silhouette, shaded by its normal
-  const LX = -0.64, LY = -0.77;
+  const LX = -0.6392, LY = -0.7690;   // unit vector, up and to the left
   const n = outer.length / 2;
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n;
@@ -199,7 +211,10 @@ function drawStone(g, stone, pal, rng) {
     const len = Math.hypot(ex, ey) || 1;
     // outward normal, given the vertices run clockwise in screen coordinates
     const nx = ey / len, ny = -ex / len;
-    const t = Math.pow((nx * LX + ny * LY + 1) * 0.5, 1.35);
+    // Clamp before the power: the dot product can land a hair outside [-1, 1]
+    // from rounding, and Math.pow of a negative base is NaN.
+    const lit = Math.min(1, Math.max(0, (nx * LX + ny * LY + 1) * 0.5));
+    const t = Math.pow(lit, 1.35);
     const tone = t > 0.5
       ? mixHex(base, light, (t - 0.5) * 1.5)
       : mixHex(base, '#000000', (0.5 - t) * 1.1);
@@ -419,6 +434,9 @@ function generate(seed) {
     seal: Sheet.makeSeal(window, 58, new Rng(seed + ':seal'), pal.dark ? '#C4443F' : '#A82730'),
     rngDraw: new Rng(seed + ':draw'),
     cursor: 0,
+    // how far into the sequence the reveal has got, in furrows
+    reveal: 0,
+    perFrame: furrows.length / REVEAL_FRAMES,
   };
 
   dirty = true;
@@ -427,18 +445,30 @@ function generate(seed) {
   updateHud();
 }
 
-/** Rake a few more furrows into the accumulating layer. */
+/**
+ * Rake a few more furrows into the accumulating layer.
+ *
+ * Furrows come in level order, so revealing them in sequence looks like the
+ * pattern spreading outward from the stones and inward from the edge at once.
+ * Drawing one is so cheap that a frame budget would finish the whole garden in
+ * well under a second, so the pace is set by how long the reveal *should*
+ * take, with the budget kept only as a guard for very dense sheets.
+ *
+ * @param {number} budgetMs 0 to finish the garden immediately
+ */
 function advance(budgetMs) {
   const start = performance.now();
   const ctx = piece.rake.drawingContext;
   const pal = piece.pal;
+  const all = budgetMs === 0;
+  if (!all) piece.reveal += piece.perFrame;
   let ran = 0;
-  while (piece.cursor < piece.furrows.length) {
+  while (piece.cursor < piece.furrows.length && (all || piece.cursor < piece.reveal)) {
     const f = piece.furrows[piece.cursor++];
     const r = piece.rngDraw;
     drawFurrow(ctx, f.pts, pal, piece.spacing, r.float(0.88, 1.12), r.float(0.82, 1));
     ran++;
-    if (budgetMs > 0 && ran % 8 === 0 && performance.now() - start > budgetMs) break;
+    if (!all && ran % 8 === 0 && performance.now() - start > budgetMs) break;
   }
   if (ran) dirty = true;
 }
