@@ -124,6 +124,39 @@ a lit room. That is not a colour swap: a backlit strip is a silhouette with no
 highlight at all, only the soft bleed where light wraps past the wood, while a
 front-lit one is a pale face with a bevel and a shadow on the paper behind.
 
+### 04 · 雪華 — Sekka
+
+`sketches/04-sekka/`
+
+In 1832 Doi Toshitsura, lord of Koga, published 雪華図説 — snow crystals seen
+through an imported Dutch microscope and cut as woodblock plates, the first
+such record in Japan. The pattern went straight onto kimono. This is that
+plate, with the crystals grown rather than observed.
+
+Reiter's cellular automaton (2005) on a hexagonal lattice. Each cell holds an
+amount of water; a cell is *receptive* if it is frozen or touches something
+frozen, and its water is taken out of circulation and can only be added to.
+Everything else diffuses:
+
+```
+u ← u + (α/2)(mean of the six neighbours − u)     free water
+v ← v + γ                        for receptive cells, locked into the crystal
+```
+
+Three constants and one seed cell, and out of it comes the whole morphology
+diagram — plates, sectored plates, stellar dendrites. Nothing about six-fold
+symmetry is written down anywhere; it is a consequence of starting from one
+frozen cell on a lattice that has it, which is also why real snow does it.
+
+Two things had to be right to get snowflakes rather than hexagons. Branching is
+a diffusive instability, so it needs a vapour gradient: the grid is kept far
+larger than the crystal, because a reservoir close to the tips feeds them and
+the notches equally and the whole thing fills in solid. And growth must not
+stop when the first tip lands — the side branches and the thickening all
+happen after that, so it keeps going for a set fraction longer.
+
+Each specimen is annotated with the constants it grew from.
+
 ## Layout
 
 ```
