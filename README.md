@@ -218,8 +218,8 @@ circles in a gasket are a pixel wide and lose that argument otherwise.
 ## Layout
 
 ```
-common/       shared helpers — seeded RNG, paper textures, sheet presentation,
-              contour tracing
+common/       shared helpers — seeded RNG, paper and grain textures, sheet
+              presentation, the work lifecycle, contour tracing
 lib/          vendored p5.js
 sketches/     one directory per work, each self-contained
 ```

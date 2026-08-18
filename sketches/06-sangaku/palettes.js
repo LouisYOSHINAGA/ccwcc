@@ -5,6 +5,10 @@
  * colours are ground mineral pigments on bare timber and both have usually
  * had a century of weather. The pigments are the traditional ones: 群青 from
  * azurite, 緑青 from malachite, 朱 from cinnabar, 胡粉 from burnt shell.
+ *
+ * `ink` is for the caption on the mount; `boardInk` is for the brushwork on
+ * the tablet itself, and defaults to the same. They differ whenever the board
+ * is darker or lighter than the paper it is presented on.
  */
 (function (global) {
   'use strict';
@@ -32,7 +36,9 @@
       id: 'susutake', name: '煤竹', roman: 'SUSUTAKE', note: 'smoke-darkened, from a hearth',
       paper: '#C4BAA6', board: '#4E3B2A', boardDark: '#33241A', grain: '#2A1D14',
       pigments: ['#6E8CB4', '#C9564A', '#7FA88C', '#D2A45E', '#E8E0CC'],
-      ink: '#E3D8C2', dark: true,
+      // The board is dark but the mount around it is not, so the brushwork on
+      // the board and the caption on the paper cannot be the same colour.
+      ink: '#2A2018', boardInk: '#E3D8C2',
     },
     {
       id: 'shiraki', name: '白木', roman: 'SHIRAKI', note: 'plain timber, ink only',

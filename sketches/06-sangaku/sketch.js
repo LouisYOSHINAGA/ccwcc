@@ -139,19 +139,20 @@ function build(seed, rng) {
   insc.textFont(Sheet.SERIF);
   insc.textAlign(CENTER, CENTER);
   insc.noStroke();
+  const boardInk = pal.boardInk || pal.ink;
   const cx = plate.w * 0.945;
   const big = Math.min(38, plate.w * 0.036);
   let y = plate.h * 0.10;
-  insc.fill(rgba(pal.ink, 0.86));
+  insc.fill(rgba(boardInk, 0.86));
   insc.textSize(big);
   for (const ch of '奉納') { insc.text(ch, cx, y); y += big * 1.25; }
   y += big * 0.9;
   insc.textSize(big * 0.62);
-  insc.fill(rgba(pal.ink, 0.7));
+  insc.fill(rgba(boardInk, 0.7));
   for (const ch of era + year + '年') { insc.text(ch, cx, y); y += big * 0.78; }
   // the conventional opening of a sangaku's working, low on the board
   insc.textSize(big * 0.62);
-  insc.fill(rgba(pal.ink, 0.6));
+  insc.fill(rgba(boardInk, 0.6));
   y = plate.h * 0.80;
   for (const ch of '術曰') { insc.text(ch, cx, y); y += big * 0.78; }
 
@@ -208,7 +209,7 @@ function drawCircle(g, fig, c, pal, rng) {
     ctx.fill();
   }
 
-  ctx.strokeStyle = rgba(pal.ink, outer ? 0.92 : Math.min(0.9, 0.58 + 0.32 * Math.min(1, c.r / 40)));
+  ctx.strokeStyle = rgba(pal.boardInk || pal.ink, outer ? 0.92 : Math.min(0.9, 0.58 + 0.32 * Math.min(1, c.r / 40)));
   ctx.lineWidth = outer
     ? Math.max(1.6, fig.R * 0.008)
     : Math.max(0.75, Math.min(2.4, c.r * 0.055));
