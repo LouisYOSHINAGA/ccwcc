@@ -184,6 +184,37 @@ ribbons rather than stroked polylines: a round cap leaves a bead at every
 joint, and a seam made of beads reads as rope lying on the bowl rather than
 metal lying in it.
 
+### 06 · 算額 — Sangaku
+
+`sketches/06-sangaku/`
+
+In the Edo period, a mathematician who solved a problem worth keeping painted
+it on a wooden tablet and hung it under the eaves of a shrine — an offering,
+and a challenge to whoever came next. Around nine hundred survive. Most are
+geometry, and most of the geometry is circles inside other circles.
+
+The figure is the Apollonian gasket, from Descartes' circle theorem: four
+mutually tangent circles satisfy
+
+```
+(k1 + k2 + k3 + k4)² = 2(k1² + k2² + k3² + k4²)
+```
+
+in curvature, with a companion identity in the complex plane weighting each
+curvature by its centre, which locates the fourth circle. Both are quadratics,
+so each triple admits two tangent circles; knowing one, the other follows by
+reflection — `k' = 2(k1+k2+k3) − k` and the same for `kz` — which is exact,
+cheap, and the entire recursion. The generated packing conserves tangency to
+floating-point precision: nothing overlaps and nothing escapes the outer
+circle.
+
+The theorem appears on a sangaku from Gunma dated 1796, thirty years before
+Philip Beecroft rediscovered it in the West.
+
+Circles are drawn with a slight departure from true, because these were brushed
+by hand onto a plank; the timber grain is kept faint, since the smallest
+circles in a gasket are a pixel wide and lose that argument otherwise.
+
 ## Layout
 
 ```
