@@ -157,6 +157,33 @@ happen after that, so it keeps going for a set fraction longer.
 
 Each specimen is annotated with the constants it grew from.
 
+### 05 · 金継ぎ — Kintsugi
+
+`sketches/05-kintsugi/`
+
+A bowl is dropped, and the pieces are joined with lacquer and dusted with gold,
+so the repair becomes the most conspicuous thing about the object. The break is
+not concealed; it is where the piece has been.
+
+A dropped ceramic does not craze into a Voronoi diagram. It fails from the
+point of impact: radial cracks run outward first, then circumferential ones
+cross between them. So the break is generated in those two phases — radial
+lines through one point (each missing it slightly, or the result is a wheel),
+then chords laid square to the direction each crack came from.
+
+Shards are kept as straight-edged convex polygons, which half-plane clipping
+preserves, and the raggedness is put back at drawing time by a crack function
+seeded from each edge's own endpoints. The two shards either side of a crack
+therefore generate the identical ragged line without sharing any data — they
+still fit, and the shatter conserves 100% of the area.
+
+The glaze gradient is defined in the vessel's coordinates rather than each
+shard's, so it runs continuously across the pieces and the bowl still reads as
+one curved object that happens to be in bits. Seams are drawn as tapered
+ribbons rather than stroked polylines: a round cap leaves a bead at every
+joint, and a seam made of beads reads as rope lying on the bowl rather than
+metal lying in it.
+
 ## Layout
 
 ```
