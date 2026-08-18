@@ -102,6 +102,28 @@ whole reason the result reads as raked sand rather than as a contour map.
 | R | rake this seed again |
 | S | save a PNG |
 
+### 03 · 組子 — Kumiko
+
+`sketches/03-kumiko/`
+
+Joinery without nails: a coarse base grid (地組) of thin cypress strips, with
+smaller leaves slotted into it. The counterweight to the first two works —
+nothing here flows, every line is straight, and the only softness allowed is
+that no strip is quite where it should be.
+
+Each traditional pattern is a construction on a lattice, so each is a short
+function: 麻の葉 is a triangular lattice plus, in every triangle, a spoke from
+each corner to the centroid — six of those meet at every lattice point, which
+is the six-pointed star the pattern is named for. 七宝 is circles on a square
+lattice of pitch r√2, so each cuts its four neighbours. The panel is divided by
+guillotine cuts at ratios that are never a half, and strips are generated
+across a whole section and then cut to it, which is how the real thing works.
+
+Palettes decide whether the panel is seen from the lit side or the dark side of
+a lit room. That is not a colour swap: a backlit strip is a silhouette with no
+highlight at all, only the soft bleed where light wraps past the wood, while a
+front-lit one is a pale face with a bevel and a shadow on the paper behind.
+
 ## Layout
 
 ```

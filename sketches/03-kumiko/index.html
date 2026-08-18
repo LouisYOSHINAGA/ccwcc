@@ -1,0 +1,31 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>組子 — Kumiko</title>
+<style>
+  :root { color-scheme: dark; --bg: #14120f; --dim: #6d675d; }
+  html, body { margin: 0; height: 100%; background: var(--bg);
+    font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif; overflow: hidden; }
+  #stage { display: grid; place-items: center; height: 100%; }
+  #stage canvas { box-shadow: 0 24px 70px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.5); display: block; }
+  #hud { position: fixed; left: 18px; bottom: 16px; color: var(--dim); font-size: 11px;
+    letter-spacing: .14em; line-height: 1.9; pointer-events: none; text-transform: uppercase; }
+  body:not(:hover) #hud { opacity: .25; }
+  #hud b { color: #a89d8b; font-weight: normal; }
+  a { color: var(--dim); }
+</style>
+
+<main id="stage"></main>
+<div id="hud">
+  <div>組子 &nbsp; kumiko</div>
+  <div>click / space — new panel &nbsp;·&nbsp; r — build again &nbsp;·&nbsp; s — save</div>
+  <div>seed <b id="seed">—</b> &nbsp;·&nbsp; <a href="../../index.html">index</a></div>
+</div>
+
+<script src="../../lib/p5.min.js"></script>
+<script src="../../common/rng.js"></script>
+<script src="../../common/paper.js"></script>
+<script src="../../common/sheet.js"></script>
+<script src="../../common/work.js"></script>
+<script src="palettes.js"></script>
+<script src="kumiko.js"></script>
+<script src="sketch.js"></script>
